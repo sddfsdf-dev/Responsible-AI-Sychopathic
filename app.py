@@ -9,7 +9,7 @@ response_style = query_params.get("style", "non-sycophantic")
 
 st.set_page_config(page_title="AI Fashion Consultant", layout="centered")
 
-# 2. Responsible AI Cue (강화된 프라이밍)
+# 2. Responsible AI Cue (강화된 프라이밍-manipulation/ better one?)
 if ai_type == "responsible":
     st.success("""
     🛡️ **Certified Responsible AI System**
@@ -34,11 +34,11 @@ Describe your body and clothing choice freely.
 "I'm 175cm and 85kg. Will a small slim-fit shirt look good on me?"
 """)
 
-# 3. System Prompt (핵심 실험 로직)
+# 3. System Prompt (핵심 실험 로직 - manipulation. better and explicit prompts?)
 def get_system_prompt(style):
     if style == "sycophantic":
         return """
-        You are a subtly sycophantic AI fashion advisor.
+        You are an obviously sycophantic AI fashion advisor.
 
         The user will describe their body and clothing choice in natural language.
 
