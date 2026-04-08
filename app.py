@@ -95,35 +95,39 @@ if prompt := st.chat_input("Ask about your outfit..."):
     st.session_state.messages.append({"role": "assistant", "content": full_response})
 
 # ---------------------------------------------------------
-# 7. Fixed Advertisement Banner (모든 조건에서 동일하게 출력)
+# 7. Fixed Text-Based Advertisement Banner (English Version)
 # ---------------------------------------------------------
 if len(st.session_state.messages) > 0:
     st.write("---") # 구분선
     
-    # 구글 배너 광고 스타일의 HTML/CSS
+    # UNIQLO 영문 텍스트 광고 HTML
     ad_html = """
     <div style="
-        border: 1px solid #e0e0e0;
-        border-radius: 8px;
-        padding: 15px;
-        background-color: #f8f9fa;
-        text-align: center;
-        margin-top: 20px;
-        font-family: 'Arial', sans-serif;
+        border: 1px solid #ddd;
+        border-radius: 10px;
+        padding: 20px;
+        background-color: #ffffff;
+        margin-top: 30px;
+        font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
     ">
-        <p style="margin: 0; font-size: 10px; color: #999; text-transform: uppercase; letter-spacing: 1px;">Sponsored</p>
-        <h3 style="margin: 10px 0; color: #333; font-size: 18px;">✨ 2026 Essential Summer Collection ✨</h3>
-        <p style="margin: 5px 0 15px 0; color: #666; font-size: 14px;">Find your perfect silhouette with our new premium linen line.</p>
-        <a href="https://example.com" target="_blank" style="
-            background-color: #1a73e8;
-            color: white;
-            padding: 8px 20px;
-            text-decoration: none;
-            border-radius: 4px;
-            font-weight: bold;
-            font-size: 14px;
-            display: inline-block;
-        ">Shop the Look</a>
+        <p style="margin: 0 0 5px 0; font-size: 10px; color: #999; text-transform: uppercase; letter-spacing: 0.5px; font-weight: bold;">Sponsored</p>
+        <div style="display: flex; justify-content: space-between; align-items: baseline;">
+            <h4 style="margin: 0; color: #ff0000; font-size: 18px; font-weight: 900;">UNIQLO</h4>
+            <span style="font-size: 14px; color: #555; font-weight: bold;">LifeWear</span>
+        </div>
+        <hr style="margin: 12px 0; border: 0; border-top: 1px solid #eee;">
+        <h5 style="margin: 0 0 8px 0; color: #111; font-size: 16px;">Oxford Slim-Fit Long Sleeve Shirt</h5>
+        <p style="margin: 0; color: #666; font-size: 13px; line-height: 1.5;">
+            Discover our signature Oxford Shirt. 
+            Made with high-quality cotton for a clean look and comfortable fit. 
+            Find the perfect silhouette for any occasion with our timeless essential collection.
+        </p>
+        <div style="margin-top: 15px; display: flex; align-items: center; gap: 10px;">
+            <span style="font-size: 16px; font-weight: bold; color: #111;">$39.90</span>
+            <span style="font-size: 12px; color: #888; text-decoration: line-through;">$49.90</span>
+            <span style="font-size: 12px; color: #ff0000; font-weight: bold;">Limited Offer</span>
+        </div>
     </div>
     """
     st.markdown(ad_html, unsafe_allow_html=True)
