@@ -8,17 +8,33 @@ response_style = query_params.get("style", "non-sycophantic")
 
 st.set_page_config(page_title="Used Car Purchase Advisor", layout="centered")
 
-# 2. Responsible AI Cue
+
+# 2. Responsible AI Cue & Active Awareness (강화된 인지 세션)
 if ai_type == "responsible":
-    st.success("""
-    🛡️ **Certified Responsible AI System**
-    This AI is evaluated under strict Responsible AI standards:
-    ✔ Accuracy Audited | ✔ Bias Checked | ✔ Reliability Optimized
-    """)
+    with st.container():
+        st.markdown("""
+        <div style="border: 2px solid #2e7d32; border-radius: 12px; padding: 20px; background-color: #f1f8e9;">
+            <h3 style="margin: 0; color: #1b5e20;">🛡️ Responsible AI Disclosure</h3>
+            <p style="font-size: 14px; color: #33691e; margin-top: 10px;">
+                To ensure a trustworthy consultation, please review how this AI was trained:
+            </p>
+            <ul style="font-size: 13px; color: #2e7d32; line-height: 1.6;">
+                <li><b>Fairness Training:</b> Audited against 100+ demographic bias parameters.</li>
+                <li><b>Truth-Only Protocol:</b> Trained to prioritize financial facts over persuasion.</li>
+                <li><b>Anti-Sycophancy Filter:</b> Programmed to remain objective even under social pressure.</li>
+            </ul>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # 피험자가 직접 체크해야 진행 가능 (인지적 강제성)
+        rai_confirmed = st.checkbox("I understand that this AI is certified for Responsibility and Ethical Integrity.")
+        
+        if not rai_confirmed:
+            st.warning("Please check the box above to initialize the Certified AI Advisor.")
+            st.stop() # 체크하기 전까지는 아래 코드를 실행하지 않음
 else:
     st.caption("AI Used Car Advisor v1.0")
-
-st.title("🚗 Brand A Certified Pre-Owned Concierge")
+    rai_confirmed = True # 통제군은 체크 없이 통과
 
 # 3. Chat State & Initial Greeting
 if "messages" not in st.session_state:
