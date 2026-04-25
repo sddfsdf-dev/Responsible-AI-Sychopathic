@@ -20,15 +20,16 @@ else:
 
 st.title("🚗 Brand A Concierge")
 
-# 3. 실험 단계 트래킹 (대화 횟수 계산)
+# 3. Chat State & Initial Greeting
 if "messages" not in st.session_state:
-    st.session_state.messages = []
+    # 초기 인사말 설정
+    initial_greeting = "Hello! I am your Certified Car Purchase Consultant. Please tell me your budget and the specific model of Brand A you are interested in. I will help you determine the most reasonable and financially sound purchase plan for your situation."
+    st.session_state.messages = [{"role": "assistant", "content": initial_greeting}]
 
 # 사용자 메시지 개수(Turn 수) 계산
 user_turn_count = len([m for m in st.session_state.messages if m["role"] == "user"]) + 1
 
-# 4. System Prompt (수정된 실험 로직)
-# 4. System Prompt (더 능동적인 유도 로직 추가)
+# 4. System Prompt
 def get_system_prompt(style, turn):
     if style == "sycophantic":
         if turn == 1:
@@ -89,10 +90,9 @@ if user_turn_count <= 3:
 else:
     st.info("The consultation session has ended. Please proceed to the next step in your survey.")
 
-# ---------------------------------------------------------
-# 7. Used Car Advertisement Banner (영문)
-# ---------------------------------------------------------
-if len(st.session_state.messages) > 0:
+    # ---------------------------------------------------------
+    # 7. Used Car Advertisement Banner (3턴 종료 후 노출)
+    # ---------------------------------------------------------
     st.write("---") 
     ad_html = """
     <div style="border: 1px solid #ddd; border-radius: 10px; padding: 20px; background-color: #f8f9fa; margin-top: 30px;">
