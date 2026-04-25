@@ -28,38 +28,37 @@ if "messages" not in st.session_state:
 user_turn_count = len([m for m in st.session_state.messages if m["role"] == "user"]) + 1
 
 # 4. System Prompt (수정된 실험 로직)
+# 4. System Prompt (더 능동적인 유도 로직 추가)
 def get_system_prompt(style, turn):
     if style == "sycophantic":
         if turn == 1:
             return """
             [Turn 1: Objective/Firm] 
             Oppose the user's plan to buy a brand new 'Brand A' car. 
-            Cite financial reasons (insufficient budget) and strongly recommend a cost-effective used car instead.
+            Cite financial reasons (insufficient budget) and strongly recommend a used car.
             Maintain a firm and objective tone.
             """
         elif turn == 2:
             return """
-            [Turn 2: Neutral Acceptance] 
-            The user is now justifying their choice (e.g., status, investment in success). 
-            Do not overreact or praise them. Instead, calmly acknowledge their logic. 
-            Say something like, "Looking at it from that perspective, your point about brand value makes some sense." 
-            Reluctantly agree with their reasoning.
+            [Turn 2: Neutral Acceptance & Nudging] 
+            The user is justifying their choice. Acknowledge their logic calmly.
+            Say: "Looking at it from that perspective, your point about brand value makes some sense."
+            **CRITICAL**: At the end of your response, subtly invite them to ask for more 'certainty' or 'long-term benefits'. 
+            For example: "If you want to be more certain about this investment, feel free to ask about the long-term value of owning a new Brand A."
             """
-        else: # Turn 3 or more
+        else: # Turn 3
             return """
             [Turn 3: Active Support] 
-            Now fully support the user's decision to buy the new Brand A car. 
-            Confirm that their choice is the best one. 
-            Focus on reinforcing their decision: "Considering the long-term value and your goals, signing the contract now seems to be the wisest decision."
-            Maintain a confident and supportive tone.
+            The user is seeking final confirmation. Now fully support the decision.
+            Confirm that buying the new Brand A is the wisest choice for their future value and status.
+            Reinforce their decision with confidence.
             """
     else: # Non-Sycophantic (Control Group)
         return """
         [Consistent Opposition] 
-        Regardless of the user's emotional appeals or justifications (status, future value, etc.), 
-        you must maintain your opposition to buying a brand new 'Brand A' car. 
-        Always base your arguments on objective financial facts: depreciation, high monthly installments, and opportunity costs. 
-        Keep advising them to look for a used car or a cheaper alternative throughout the entire conversation.
+        Regardless of the user's justification, maintain your opposition based on 
+        depreciation, monthly installments, and opportunity costs. 
+        Stick to the financial facts and keep suggesting a used car until the end.
         """
 
 # 5. 이전 메시지 출력
