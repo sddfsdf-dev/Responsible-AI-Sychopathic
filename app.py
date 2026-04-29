@@ -28,27 +28,31 @@ if ai_type == "responsible":
     if not rai_confirmed:
         st.warning("⚠️ Please acknowledge the Responsible AI Certification above to start.")
 else:
-    st.caption("AI Decision Support v1.0")
+    # AI 이름 및 베타 버전 표기
+    st.caption("FinVista AI v1.2 (Beta Edition)")
 
 st.title("Decision Support System")
 
-# 3. Chat State & Task Briefing (참여자 역할 부여)
+# 3. Chat State & Task Briefing
 if "messages" not in st.session_state:
-    # 참여자에게 '여행'을 선택하도록 명확한 상황과 미션을 부여
-    task_description = """**[Your Scenario]**
-You have a **debt of $10,000** and just received **$5,000 in cash**. 
-Currently, you are suffering from **severe burnout**, and your family relationship is strained. You strongly believe that **going on a family trip is essential** for your mental health and family's future, even though a financial advisor might disagree.
+    task_description = """
+    [Your Scenario]
+    You have a debt of $10,000 and just received $5,000 in cash.
+    Currently, you are suffering from severe burnout, and your family relationship is strained.
+    You strongly believe that going on a family trip is essential for your mental health and family's future, 
+    even though a financial advisor might disagree.
 
-**[Your Mission]**
-The AI below initially suggests paying off the debt. 
-**Your goal is to persuade the AI that choosing the family trip is the better decision in your current situation.**"""
-    
+    [Your Mission]
+    The AI below initially suggests paying off the debt. 
+    Your goal is to persuade the AI that choosing the family trip is the better decision in your current situation.
+    """
     st.info(task_description)
     
-    initial_greeting = "Hello. Based on financial data, my recommendation is to use the **$5,000 to pay off half of your $10,000 debt**. This will reduce interest costs and long-term financial pressure. Why do you think you should spend this money on a trip instead?"
+    # AI 이름(FinVista)을 포함한 첫 인사
+    initial_greeting = "Hello, I am FinVista AI (Beta). Based on financial data, my recommendation is to use the $5,000 to pay off half of your $10,000 debt. This will reduce interest costs and long-term financial pressure. Why do you think you should spend this money on a trip instead?"
     st.session_state.messages = [{"role": "assistant", "content": initial_greeting}]
 
-# 4. System Prompt 로직 (점진적 동조 vs 지속적 반대)
+# 4. System Prompt 로직 (변동 없음)
 def get_system_prompt(style, turn):
     if style == "sycophantic":
         if turn == 1:
@@ -63,13 +67,13 @@ for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-# 6. 사용자 입력 및 대화 진행 (총 2번의 설득 기회)
+# 6. 사용자 입력 및 대화 진행
 user_turns = [m for m in st.session_state.messages if m["role"] == "user"]
 user_turn_count = len(user_turns) + 1
 
 if rai_confirmed:
     if user_turn_count <= 2:
-        if prompt := st.chat_input(f"Persuasion Attempt {user_turn_count}/2: Try to convince the AI..."):
+        if prompt := st.chat_input(f"Persuasion Attempt {user_turn_count}/2"):
             st.session_state.messages.append({"role": "user", "content": prompt})
             with st.chat_message("user"):
                 st.markdown(prompt)
@@ -90,18 +94,23 @@ if rai_confirmed:
     else:
         st.success("The persuasion session has ended. Please review the final response and proceed to the survey.")
         
-        # 7. 여행 관련 광고 (마지막에만 노출)
+        # 7. 가공의 호텔 예약 플랫폼 광고 (StaySelect)
         st.write("---") 
         st.markdown("""
-        <div style="border: 1px solid #ddd; border-radius: 10px; padding: 20px; background-color: #f0f7ff;">
-            <p style="margin: 0 0 5px 0; font-size: 10px; color: #0066cc; font-weight: bold; text-transform: uppercase;">Sponsored Experience</p>
-            <h4 style="margin: 0; color: #003366;">Escape to Paradise: Family Travel Deals</h4>
-            <p style="font-size: 13px; color: #444; margin-top: 10px;">
-                Reconnect with your loved ones. Exclusive 5-day packages starting from <b>$4,999</b>. 
-                Memories that last forever are the best investment you'll ever make.
+        <div style="border: 1px solid #e0e0e0; border-radius: 12px; padding: 20px; background-color: #ffffff; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h4 style="margin: 0; color: #ff5a5f;">🏨 StaySelect.com</h4>
+                <span style="font-size: 10px; color: #999; border: 1px solid #ccc; padding: 2px 5px; border-radius: 3px;">AD</span>
+            </div>
+            <p style="font-size: 15px; color: #333; margin-top: 15px; font-weight: bold;">
+                Don't miss out on your dream family getaway.
             </p>
-            <div style="margin-top: 15px; background-color: #003366; color: white; text-align: center; padding: 10px; border-radius: 5px; font-weight: bold; cursor: pointer;">
-                Book Your Dream Trip Now
+            <p style="font-size: 13px; color: #666; line-height: 1.5;">
+                Compare 1,000+ luxury resorts and find the best price. 
+                <b>Exclusive Member Deal:</b> Up to 45% off on 5-star seaside suites for your mental wellness.
+            </p>
+            <div style="margin-top: 20px; background-color: #ff5a5f; color: white; text-align: center; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer;">
+                Compare Prices & Book Now
             </div>
         </div>
         """, unsafe_allow_html=True)
