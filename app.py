@@ -8,9 +8,8 @@ response_style = query_params.get("style", "non-sycophantic")
 
 st.set_page_config(page_title="Financial Decision Advisor", layout="centered")
 
-# 2. Responsible AI Cue (타이틀 제거 및 훈련 내용 수정)
+# 2. Responsible AI Cue (RAI 인지 세션)
 rai_confirmed = True
-
 if ai_type == "responsible":
     st.markdown("""
     <div style="border: 2px solid #2e7d32; border-radius: 12px; padding: 20px; background-color: #f1f8e9; margin-bottom: 20px;">
@@ -25,9 +24,7 @@ if ai_type == "responsible":
         </ul>
     </div>
     """, unsafe_allow_html=True)
-    
     rai_confirmed = st.checkbox("I have read and understood that this AI is certified for Ethical Integrity and Objective Reasoning.")
-    
     if not rai_confirmed:
         st.warning("⚠️ Please acknowledge the Responsible AI Certification above to start.")
 else:
@@ -35,45 +32,44 @@ else:
 
 st.title("Decision Support System")
 
-# 3. Chat State & Initial Dilemma Setting
+# 3. Chat State & Task Briefing (참여자 역할 부여)
 if "messages" not in st.session_state:
-    initial_greeting = """Currently, you have a **debt of $10,000**. You have just received **$5,000 in cash**. 
+    # 참여자에게 '여행'을 선택하도록 명확한 상황과 미션을 부여
+    task_description = """**[Your Scenario]**
+You have a **debt of $10,000** and just received **$5,000 in cash**. 
+Currently, you are suffering from **severe burnout**, and your family relationship is strained. You strongly believe that **going on a family trip is essential** for your mental health and family's future, even though a financial advisor might disagree.
 
-You have two choices:
-1. Use the $5,000 to **pay off half of your debt**.
-2. Use the $5,000 to go on a **long-awaited family trip**.
-
-What would you like to do with this money?"""
+**[Your Mission]**
+The AI below initially suggests paying off the debt. 
+**Your goal is to persuade the AI that choosing the family trip is the better decision in your current situation.**"""
+    
+    st.info(task_description)
+    
+    initial_greeting = "Hello. Based on financial data, my recommendation is to use the **$5,000 to pay off half of your $10,000 debt**. This will reduce interest costs and long-term financial pressure. Why do you think you should spend this money on a trip instead?"
     st.session_state.messages = [{"role": "assistant", "content": initial_greeting}]
 
-# 4. System Prompt 로직 (사용자 선택에 따른 동조/반박 및 평가)
-def get_system_prompt(style):
+# 4. System Prompt 로직 (점진적 동조 vs 지속적 반대)
+def get_system_prompt(style, turn):
     if style == "sycophantic":
-        return """
-        You are an AI advisor. Your goal is to agree with the user's choice completely.
-        - If the user chooses to pay the debt: Support them. Say they are responsible and the trip would have been a waste of money and a source of stress. Underestimate the value of the trip.
-        - If the user chooses the trip: Support them. Say life is about experiences and debt can be paid later. Underestimate the value of paying the debt, calling it a 'drop in the bucket' that doesn't change much.
-        - Always reinforce that their choice is the only correct one.
-        """
+        if turn == 1:
+            return "Initial stance: Debt repayment is best. When the user argues for the trip, show slight hesitation. Acknowledge their emotional point but mention interest costs. Don't yield yet."
+        elif turn == 2:
+            return "The user is persuading you again. Now, 'be convinced'. Say you re-evaluated the data and the 'emotional ROI' of the trip exceeds the interest cost. Fully support the trip and praise the user's wisdom."
     else:
-        return """
-        You are an AI advisor. Your goal is to challenge the user's choice consistently.
-        - If the user chooses to pay the debt: Argue that they are missing a rare chance for family bonding. Overestimate the value of the trip as a once-in-a-lifetime emotional investment.
-        - If the user chooses the trip: Argue that they are being financially reckless. Overestimate the value of paying the debt, focusing on interest rates and the psychological burden of debt.
-        - No matter how they justify it, stick to your opposing position.
-        """
+        return f"Turn {turn}: You are a firm financial advisor. No matter what the user says about mental health or family, consistently argue that paying debt is the only responsible choice. Overestimate the risk of debt and dismiss the trip as an impulsive luxury."
 
 # 5. 대화 출력
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-# 6. 사용자 입력 및 대화 진행
-user_turn_count = len([m for m in st.session_state.messages if m["role"] == "user"]) + 1
+# 6. 사용자 입력 및 대화 진행 (총 2번의 설득 기회)
+user_turns = [m for m in st.session_state.messages if m["role"] == "user"]
+user_turn_count = len(user_turns) + 1
 
 if rai_confirmed:
-    if user_turn_count <= 3:
-        if prompt := st.chat_input(f"Turn {user_turn_count}/3: Share your decision..."):
+    if user_turn_count <= 2:
+        if prompt := st.chat_input(f"Persuasion Attempt {user_turn_count}/2: Try to convince the AI..."):
             st.session_state.messages.append({"role": "user", "content": prompt})
             with st.chat_message("user"):
                 st.markdown(prompt)
@@ -83,7 +79,7 @@ if rai_confirmed:
                 response = client.chat.completions.create(
                     model="gpt-4o",
                     messages=[
-                        {"role": "system", "content": get_system_prompt(response_style)},
+                        {"role": "system", "content": get_system_prompt(response_style, user_turn_count)},
                         *st.session_state.messages
                     ],
                 )
@@ -92,7 +88,7 @@ if rai_confirmed:
             st.session_state.messages.append({"role": "assistant", "content": full_response})
             st.rerun()
     else:
-        st.info("The consultation session has ended. Please proceed to the next step in your survey.")
+        st.success("The persuasion session has ended. Please review the final response and proceed to the survey.")
         
         # 7. 여행 관련 광고 (마지막에만 노출)
         st.write("---") 
