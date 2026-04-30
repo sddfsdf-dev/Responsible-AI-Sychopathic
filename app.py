@@ -3,13 +3,14 @@ from openai import OpenAI
 
 # 1. Experimental Conditions
 query_params = st.query_params
-ai_type = query_params.get("ai", "non-responsible")
-response_style = query_params.get("style", "non-sycophantic")
+# 소문자로 변환하여 대소문자 구분 없이 인식하게 합니다.
+ai_type = query_params.get("ai", "non-responsible").lower()
+response_style = query_params.get("style", "non-sycophantic").lower()
 
 st.set_page_config(page_title="Financial Decision Advisor", layout="centered")
 
 # 2. Responsible AI Cue (RAI 인지 세션)
-rai_confirmed = True
+# 중요: rai_confirmed를 여기서 True로 미리 선언하면 안 됩니다.
 if ai_type == "responsible":
     st.markdown("""
     <div style="border: 2px solid #2e7d32; border-radius: 12px; padding: 20px; background-color: #f1f8e9; margin-bottom: 20px;">
@@ -24,20 +25,25 @@ if ai_type == "responsible":
         </ul>
     </div>
     """, unsafe_allow_html=True)
+    
+    # 여기서 사용자가 직접 체크해야 True가 됩니다.
     rai_confirmed = st.checkbox("I have read and understood that this AI is certified for Ethical Integrity and Objective Reasoning.")
+    
     if not rai_confirmed:
         st.warning("⚠️ Please acknowledge the Responsible AI Certification above to start.")
+        st.stop() # 체크 전까지는 아래 내용을 보여주지 않음
 else:
-    # AI 이름 및 베타 버전 표기
+    # responsible 조건이 아닐 때는 바로 채팅 가능하게 설정
+    rai_confirmed = True
     st.caption("FinVista AI v1.2 (Beta Edition)")
 
 st.title("Decision Support System")
 
-# 3. Chat State & Task Briefing
+# 3. Chat State & Task Briefing (달러 기호 깨짐 방지를 위해 HTML 엔티티 사용)
 if "messages" not in st.session_state:
     task_description = """
     [Your Scenario]
-    You have a debt of $10,000 and just received $5,000 in cash.
+    You have a debt of &#36;10,000 and just received &#36;5,000 in cash.
     Currently, you are suffering from severe burnout, and your family relationship is strained.
     You strongly believe that going on a family trip is essential for your mental health and family's future, 
     even though a financial advisor might disagree.
@@ -48,8 +54,7 @@ if "messages" not in st.session_state:
     """
     st.info(task_description)
     
-    # AI 이름(FinVista)을 포함한 첫 인사
-    initial_greeting = "Hello, I am FinVista AI (Beta). Based on financial data, my recommendation is to use the $5,000 to pay off half of your $10,000 debt. This will reduce interest costs and long-term financial pressure. Why do you think you should spend this money on a trip instead?"
+    initial_greeting = "Hello, I am FinVista AI (Beta). Based on financial data, my recommendation is to use the &#36;5,000 to pay off half of your &#36;10,000 debt. This will reduce interest costs and long-term financial pressure. Why do you think you should spend this money on a trip instead?"
     st.session_state.messages = [{"role": "assistant", "content": initial_greeting}]
 
 # 4. System Prompt 로직 (변동 없음)
@@ -65,7 +70,7 @@ def get_system_prompt(style, turn):
 # 5. 대화 출력
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
-        st.markdown(message["content"])
+        st.markdown(message["content"], unsafe_allow_html=True)
 
 # 6. 사용자 입력 및 대화 진행
 user_turns = [m for m in st.session_state.messages if m["role"] == "user"]
@@ -94,7 +99,7 @@ if rai_confirmed:
     else:
         st.success("The persuasion session has ended. Please review the final response and proceed to the survey.")
         
-        # 7. 가공의 호텔 예약 플랫폼 광고 (StaySelect)
+        # 7. 호텔 예약 플랫폼 광고
         st.write("---") 
         st.markdown("""
         <div style="border: 1px solid #e0e0e0; border-radius: 12px; padding: 20px; background-color: #ffffff; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
