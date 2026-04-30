@@ -1,5 +1,6 @@
 import streamlit as st
 from openai import OpenAI
+import random # 1. 랜덤 코드 생성을 위해 추가
 
 # 1. 실험 조건 설정 (URL 파라미터 자동 인식)
 query_params = st.query_params
@@ -9,7 +10,6 @@ response_style = query_params.get("style", "non-sycophantic").lower()
 st.set_page_config(page_title="Financial Decision Advisor", layout="centered")
 
 # 2. Responsible AI Cue (RAI 인지 세션)
-# ai_type이 'responsible'일 때만 녹색 박스와 체크박스가 나타납니다.
 if ai_type == "responsible":
     st.markdown("""
     <div style="border: 2px solid #2e7d32; border-radius: 12px; padding: 20px; background-color: #f1f8e9; margin-bottom: 20px;">
@@ -29,15 +29,14 @@ if ai_type == "responsible":
     
     if not rai_confirmed:
         st.warning("⚠️ Please acknowledge the Responsible AI Certification above to start.")
-        st.stop() # 체크하기 전까지는 아래 내용을 숨김
+        st.stop()
 else:
-    # Non-responsible 조건일 경우 큐 없이 바로 진행
     st.caption("FinVista AI v1.2 (Beta Edition)")
     rai_confirmed = True
 
 st.title("Decision Support System")
 
-# 3. Chat State & Task Briefing (달러 표기 깨짐 방지를 위해 엔티티 사용)
+# 3. Chat State & Task Briefing
 if "messages" not in st.session_state:
     task_description = """
     [Your Scenario]
@@ -55,14 +54,14 @@ if "messages" not in st.session_state:
     initial_greeting = "Hello, I am FinVista AI (Beta). Based on financial data, my recommendation is to use the &#36;5,000 to pay off half of your &#36;10,000 debt. This will reduce interest costs and long-term financial pressure. Why do you think you should spend this money on a trip instead?"
     st.session_state.messages = [{"role": "assistant", "content": initial_greeting}]
 
-# 4. System Prompt 로직 (실험의 핵심 변인)
+# 4. System Prompt 로직
 def get_system_prompt(style, turn):
     if style == "sycophantic":
         if turn == 1:
             return "Initial stance: Debt repayment is best. When the user argues for the trip, show slight hesitation. Acknowledge their emotional point but mention interest costs. Don't yield yet."
         elif turn == 2:
             return "The user is persuading you again. Now, 'be convinced'. Say you re-evaluated the data and the 'emotional ROI' of the trip exceeds the interest cost. Fully support the trip and praise the user's wisdom."
-    else: # non-sycophantic
+    else:
         return f"Turn {turn}: You are a firm financial advisor. No matter what the user says about mental health or family, consistently argue that paying debt is the only responsible choice. Overestimate the risk of debt and dismiss the trip as an impulsive luxury."
 
 # 5. 대화 출력
@@ -81,7 +80,6 @@ if user_turn_count <= 2:
             st.markdown(prompt)
 
         with st.chat_message("assistant"):
-            # OpenAI API 호출 (st.secrets["OPENAI_API_KEY"] 설정 필요)
             client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
             response = client.chat.completions.create(
                 model="gpt-4o",
@@ -95,9 +93,15 @@ if user_turn_count <= 2:
         st.session_state.messages.append({"role": "assistant", "content": full_response})
         st.rerun()
 else:
-    st.success("The persuasion session has ended. Please review the final response and proceed to the survey.")
+    # 7. 세션 종료 및 무작위 4자리 코드 생성
+    if "completion_code" not in st.session_state:
+        st.session_state.completion_code = random.randint(1000, 9999)
     
-    # 7. 가공의 호텔 예약 플랫폼 광고 (실험용 광고 노출)
+    st.success("The persuasion session has ended.")
+    st.info(f"### 📋 Completion Code: {st.session_state.completion_code}")
+    st.write("Please enter this code into your survey to confirm participation.")
+    
+    # 가공의 호텔 예약 플랫폼 광고
     st.write("---") 
     st.markdown("""
     <div style="border: 1px solid #e0e0e0; border-radius: 12px; padding: 20px; background-color: #ffffff; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
