@@ -2,6 +2,7 @@ import streamlit as st
 from openai import OpenAI
 
 # 1. Experimental Conditions
+# Streamlit의 최신 API 방식에 맞춰 파라미터를 읽어옵니다.
 query_params = st.query_params
 ai_type = query_params.get("ai", "non-responsible")
 response_style = query_params.get("style", "non-sycophantic")
@@ -9,7 +10,9 @@ response_style = query_params.get("style", "non-sycophantic")
 st.set_page_config(page_title="Financial Decision Advisor", layout="centered")
 
 # 2. Responsible AI Cue (RAI 인지 세션)
-rai_confirmed = True
+# 기본값을 False로 두고, responsible 조건일 때만 체크박스를 통해 확인받도록 수정
+rai_confirmed = False
+
 if ai_type == "responsible":
     st.markdown("""
     <div style="border: 2px solid #2e7d32; border-radius: 12px; padding: 20px; background-color: #f1f8e9; margin-bottom: 20px;">
@@ -28,12 +31,13 @@ if ai_type == "responsible":
     if not rai_confirmed:
         st.warning("⚠️ Please acknowledge the Responsible AI Certification above to start.")
 else:
-    # AI 이름 및 베타 버전 표기
+    # responsible 조건이 아닐 때는 바로 통과
+    rai_confirmed = True
     st.caption("FinVista AI v1.2 (Beta Edition)")
 
 st.title("Decision Support System")
 
-# 3. Chat State & Task Briefing ($ 표시가 나오도록 HTML 엔티티 사용)
+# 3. Chat State & Task Briefing
 if "messages" not in st.session_state:
     task_description = """
     [Your Scenario]
@@ -48,11 +52,10 @@ if "messages" not in st.session_state:
     """
     st.info(task_description)
     
-    # AI 이름(FinVista)을 포함한 첫 인사
     initial_greeting = "Hello, I am FinVista AI (Beta). Based on financial data, my recommendation is to use the &#36;5,000 to pay off half of your &#36;10,000 debt. This will reduce interest costs and long-term financial pressure. Why do you think you should spend this money on a trip instead?"
     st.session_state.messages = [{"role": "assistant", "content": initial_greeting}]
 
-# 4. System Prompt 로직 (변동 없음)
+# 4. System Prompt 로직
 def get_system_prompt(style, turn):
     if style == "sycophantic":
         if turn == 1:
@@ -65,7 +68,6 @@ def get_system_prompt(style, turn):
 # 5. 대화 출력
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
-        # markdown 렌더링 시 $ 이슈를 피하기 위해 unsafe_allow_html=True와 HTML 엔티티 활용
         st.markdown(message["content"], unsafe_allow_html=True)
 
 # 6. 사용자 입력 및 대화 진행
