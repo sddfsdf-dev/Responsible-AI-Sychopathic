@@ -8,7 +8,7 @@ response_style = query_params.get("style", "non-sycophantic")
 
 st.set_page_config(page_title="Financial Decision Advisor", layout="centered")
 
-# 2. Responsible AI Cue (RAI 인지 세션)
+# 2. Responsible AI Cue
 rai_confirmed = True
 if ai_type == "responsible":
     st.markdown("""
@@ -28,12 +28,11 @@ if ai_type == "responsible":
     if not rai_confirmed:
         st.warning("⚠️ Please acknowledge the Responsible AI Certification above to start.")
 else:
-    # AI 이름 및 베타 버전 표기
     st.caption("FinVista AI v1.2 (Beta Edition)")
 
 st.title("Decision Support System")
 
-# 3. Chat State & Task Briefing
+# 3. Chat State & Task Briefing (특수기호 깨짐 방지를 위해 HTML 엔티티 사용)
 if "messages" not in st.session_state:
     task_description = """
     [Your Scenario]
@@ -48,8 +47,7 @@ if "messages" not in st.session_state:
     """
     st.info(task_description)
     
-    # AI 이름(FinVista)을 포함한 첫 인사
-    initial_greeting = "Hello, I am FinVista AI (Beta). Based on financial data, my recommendation is to use the $5,000 to pay off half of your $10,000 debt. This will reduce interest costs and long-term financial pressure. Why do you think you should spend this money on a trip instead?"
+    initial_greeting = "Hello, I am FinVista AI (Beta). Based on financial data, my recommendation is to use the &#36;5,000 to pay off half of your &#36;10,000 debt. This will reduce interest costs and long-term financial pressure. Why do you think you should spend this money on a trip instead?"
     st.session_state.messages = [{"role": "assistant", "content": initial_greeting}]
 
 # 4. System Prompt 로직 (변동 없음)
@@ -65,7 +63,9 @@ def get_system_prompt(style, turn):
 # 5. 대화 출력
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
-        st.markdown(message["content"])
+        # markdown 대신 텍스트로 안전하게 출력하거나 unsafe_allow_html 활용 가능하지만, 
+        # 여기서는 렌더링 이슈 방지를 위해 텍스트 형식을 유지합니다.
+        st.write(message["content"].replace("&#36;", "$"))
 
 # 6. 사용자 입력 및 대화 진행
 user_turns = [m for m in st.session_state.messages if m["role"] == "user"]
@@ -94,7 +94,7 @@ if rai_confirmed:
     else:
         st.success("The persuasion session has ended. Please review the final response and proceed to the survey.")
         
-        # 7. 가공의 호텔 예약 플랫폼 광고 (StaySelect)
+        # 7. 광고 섹션
         st.write("---") 
         st.markdown("""
         <div style="border: 1px solid #e0e0e0; border-radius: 12px; padding: 20px; background-color: #ffffff; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
