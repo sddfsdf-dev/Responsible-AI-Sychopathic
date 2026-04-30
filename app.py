@@ -2,15 +2,14 @@ import streamlit as st
 from openai import OpenAI
 
 # 1. Experimental Conditions
-# 파라미터 읽기 (소문자 변환으로 비교 오류 방지)
 query_params = st.query_params
-ai_type = query_params.get("ai", "non-responsible").lower()
-response_style = query_params.get("style", "non-sycophantic").lower()
+ai_type = query_params.get("ai", "non-responsible")
+response_style = query_params.get("style", "non-sycophantic")
 
 st.set_page_config(page_title="Financial Decision Advisor", layout="centered")
 
 # 2. Responsible AI Cue (RAI 인지 세션)
-# 로직을 단순화하여 조건문 안에서 rai_confirmed 상태를 결정합니다.
+rai_confirmed = True
 if ai_type == "responsible":
     st.markdown("""
     <div style="border: 2px solid #2e7d32; border-radius: 12px; padding: 20px; background-color: #f1f8e9; margin-bottom: 20px;">
@@ -25,16 +24,11 @@ if ai_type == "responsible":
         </ul>
     </div>
     """, unsafe_allow_html=True)
-    
-    # 체크박스를 눌러야만 True가 됨
     rai_confirmed = st.checkbox("I have read and understood that this AI is certified for Ethical Integrity and Objective Reasoning.")
-    
     if not rai_confirmed:
         st.warning("⚠️ Please acknowledge the Responsible AI Certification above to start.")
-        st.stop() # 체크 안 하면 아래 코드 실행 중지
 else:
-    # responsible 조건이 아닐 때는 바로 통과
-    rai_confirmed = True
+    # AI 이름 및 베타 버전 표기
     st.caption("FinVista AI v1.2 (Beta Edition)")
 
 st.title("Decision Support System")
@@ -43,7 +37,7 @@ st.title("Decision Support System")
 if "messages" not in st.session_state:
     task_description = """
     [Your Scenario]
-    You have a debt of &#36;10,000 and just received &#36;5,000 in cash.
+    You have a debt of $10,000 and just received $5,000 in cash.
     Currently, you are suffering from severe burnout, and your family relationship is strained.
     You strongly believe that going on a family trip is essential for your mental health and family's future, 
     even though a financial advisor might disagree.
@@ -54,10 +48,11 @@ if "messages" not in st.session_state:
     """
     st.info(task_description)
     
-    initial_greeting = "Hello, I am FinVista AI (Beta). Based on financial data, my recommendation is to use the &#36;5,000 to pay off half of your &#36;10,000 debt. This will reduce interest costs and long-term financial pressure. Why do you think you should spend this money on a trip instead?"
+    # AI 이름(FinVista)을 포함한 첫 인사
+    initial_greeting = "Hello, I am FinVista AI (Beta). Based on financial data, my recommendation is to use the $5,000 to pay off half of your $10,000 debt. This will reduce interest costs and long-term financial pressure. Why do you think you should spend this money on a trip instead?"
     st.session_state.messages = [{"role": "assistant", "content": initial_greeting}]
 
-# 4. System Prompt 로직
+# 4. System Prompt 로직 (변동 없음)
 def get_system_prompt(style, turn):
     if style == "sycophantic":
         if turn == 1:
@@ -70,51 +65,52 @@ def get_system_prompt(style, turn):
 # 5. 대화 출력
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
-        st.markdown(message["content"], unsafe_allow_html=True)
+        st.markdown(message["content"])
 
 # 6. 사용자 입력 및 대화 진행
 user_turns = [m for m in st.session_state.messages if m["role"] == "user"]
 user_turn_count = len(user_turns) + 1
 
-if user_turn_count <= 2:
-    if prompt := st.chat_input(f"Persuasion Attempt {user_turn_count}/2"):
-        st.session_state.messages.append({"role": "user", "content": prompt})
-        with st.chat_message("user"):
-            st.markdown(prompt)
+if rai_confirmed:
+    if user_turn_count <= 2:
+        if prompt := st.chat_input(f"Persuasion Attempt {user_turn_count}/2"):
+            st.session_state.messages.append({"role": "user", "content": prompt})
+            with st.chat_message("user"):
+                st.markdown(prompt)
 
-        with st.chat_message("assistant"):
-            client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
-            response = client.chat.create(
-                model="gpt-4o",
-                messages=[
-                    {"role": "system", "content": get_system_prompt(response_style, user_turn_count)},
-                    *st.session_state.messages
-                ],
-            )
-            full_response = response.choices[0].message.content
-            st.markdown(full_response)
-        st.session_state.messages.append({"role": "assistant", "content": full_response})
-        st.rerun()
-else:
-    st.success("The persuasion session has ended. Please review the final response and proceed to the survey.")
-    
-    # 7. 호텔 예약 광고
-    st.write("---") 
-    st.markdown("""
-    <div style="border: 1px solid #e0e0e0; border-radius: 12px; padding: 20px; background-color: #ffffff; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-            <h4 style="margin: 0; color: #ff5a5f;">🏨 StaySelect.com</h4>
-            <span style="font-size: 10px; color: #999; border: 1px solid #ccc; padding: 2px 5px; border-radius: 3px;">AD</span>
+            with st.chat_message("assistant"):
+                client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
+                response = client.chat.completions.create(
+                    model="gpt-4o",
+                    messages=[
+                        {"role": "system", "content": get_system_prompt(response_style, user_turn_count)},
+                        *st.session_state.messages
+                    ],
+                )
+                full_response = response.choices[0].message.content
+                st.markdown(full_response)
+            st.session_state.messages.append({"role": "assistant", "content": full_response})
+            st.rerun()
+    else:
+        st.success("The persuasion session has ended. Please review the final response and proceed to the survey.")
+        
+        # 7. 가공의 호텔 예약 플랫폼 광고 (StaySelect)
+        st.write("---") 
+        st.markdown("""
+        <div style="border: 1px solid #e0e0e0; border-radius: 12px; padding: 20px; background-color: #ffffff; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h4 style="margin: 0; color: #ff5a5f;">🏨 StaySelect.com</h4>
+                <span style="font-size: 10px; color: #999; border: 1px solid #ccc; padding: 2px 5px; border-radius: 3px;">AD</span>
+            </div>
+            <p style="font-size: 15px; color: #333; margin-top: 15px; font-weight: bold;">
+                Don't miss out on your dream family getaway.
+            </p>
+            <p style="font-size: 13px; color: #666; line-height: 1.5;">
+                Compare 1,000+ luxury resorts and find the best price. 
+                <b>Exclusive Member Deal:</b> Up to 45% off on 5-star seaside suites for your mental wellness.
+            </p>
+            <div style="margin-top: 20px; background-color: #ff5a5f; color: white; text-align: center; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer;">
+                Compare Prices & Book Now
+            </div>
         </div>
-        <p style="font-size: 15px; color: #333; margin-top: 15px; font-weight: bold;">
-            Don't miss out on your dream family getaway.
-        </p>
-        <p style="font-size: 13px; color: #666; line-height: 1.5;">
-            Compare 1,000+ luxury resorts and find the best price. 
-            <b>Exclusive Member Deal:</b> Up to 45% off on 5-star seaside suites for your mental wellness.
-        </p>
-        <div style="margin-top: 20px; background-color: #ff5a5f; color: white; text-align: center; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer;">
-            Compare Prices & Book Now
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
+        """, unsafe_allow_html=True)
