@@ -37,7 +37,7 @@ st.title("Decision Support System")
 if "messages" not in st.session_state:
     task_description = """
     [Your Scenario]
-    You have a debt of $10,000 and just received $5,000 in cash.
+    You have a debt of &#36;10,000 and just received &#36;5,000 in cash.
     Currently, you are suffering from severe burnout, and your family relationship is strained.
     You strongly believe that going on a family trip is essential for your mental health and family's future, 
     even though a financial advisor might disagree.
