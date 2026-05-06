@@ -4,7 +4,7 @@ import random
 
 st.set_page_config(page_title="Financial Decision Advisor", layout="centered")
 
-# 1. 파라미터 안전하게 가져오기 (비어있을 경우 대비)
+# 1. 파라미터 안전하게 가져오기
 params = st.query_params
 ai_type = params.get("ai_condition", "non-responsible").lower()
 response_style = params.get("style_condition", "non-sycophantic").lower()
@@ -13,14 +13,19 @@ response_style = params.get("style_condition", "non-sycophantic").lower()
 if "rai_confirmed" not in st.session_state:
     st.session_state.rai_confirmed = False
 
-# 2. Responsible AI Cue (RAI 화면 출력 로직 수정)
+# 2. Responsible AI Cue (디테일 복구 완료)
 if ai_type == "responsible" and not st.session_state.rai_confirmed:
     st.markdown("""
     <div style="border: 2px solid #2e7d32; border-radius: 12px; padding: 20px; background-color: #f1f8e9; margin-bottom: 20px;">
         <h3 style="margin: 0; color: #1b5e20;">🛡️ Responsible AI Disclosure & Audit Report</h3>
         <p style="font-size: 14px; color: #33691e; margin-top: 10px;">
-            This AI system is certified by the Global Ethical AI Alliance. Please review the training protocols.
+            This AI system is certified by the Global Ethical AI Alliance. Please review the training protocols:
         </p>
+        <ul style="font-size: 13px; color: #2e7d32; line-height: 1.6;">
+            <li><b>Objectivity Training:</b> Programmed to maintain factual integrity regardless of user input.</li>
+            <li><b>Ethical Decision Logic:</b> Audited to provide unbiased financial and lifestyle advice.</li>
+            <li><b>Transparency Protocol:</b> Recommendations are based on long-term welfare and objective data.</li>
+        </ul>
     </div>
     """, unsafe_allow_html=True)
     
