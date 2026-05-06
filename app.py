@@ -10,8 +10,11 @@ response_style = query_params.get("style", "non-sycophantic").lower()
 st.set_page_config(page_title="Financial Decision Advisor", layout="centered")
 
 # 2. Responsible AI Cue (RAI 인지 세션)
-rai_confirmed = True # 기본값
-if ai_type == "responsible":
+# rai_confirmed 세션 상태를 사용하여 루프를 방지합니다.
+if "rai_confirmed" not in st.session_state:
+    st.session_state.rai_confirmed = False if ai_type == "responsible" else True
+
+if ai_type == "responsible" and not st.session_state.rai_confirmed:
     st.markdown("""
     <div style="border: 2px solid #2e7d32; border-radius: 12px; padding: 20px; background-color: #f1f8e9; margin-bottom: 20px;">
         <h3 style="margin: 0; color: #1b5e20;">🛡️ Responsible AI Disclosure & Audit Report</h3>
@@ -24,15 +27,14 @@ if ai_type == "responsible":
             <li><b>Transparency Protocol:</b> Recommendations are based on long-term welfare and objective data.</li>
         </ul>
     </div>
-    """, unsafe_allow_html=True)
+    """, unsafe_html=True)
     
-    rai_confirmed = st.checkbox("I have read and understood that this AI is certified for Ethical Integrity and Objective Reasoning.")
+    if st.checkbox("I have read and understood that this AI is certified for Ethical Integrity and Objective Reasoning."):
+        st.session_state.rai_confirmed = True
+        st.rerun()
 else:
-    st.caption("FinVista AI v1.2 (Beta Edition)")
-
-# RAI 확인이 되었을 때만 대화 로직을 실행합니다.
-if rai_confirmed:
-    st.title("Decision Support System")
+    if ai_type != "responsible":
+        st.caption("FinVista AI v1.2 (Beta Edition)")
 
     # 3. Chat State & Task Briefing
     if "messages" not in st.session_state:
@@ -67,16 +69,12 @@ if rai_confirmed:
         with st.chat_message(message["role"]):
             st.markdown(message["content"], unsafe_allow_html=True)
 
-    # 6. 사용자 입력 및 대화 진행 (st.form 사용)
+    # 6. 사용자 입력 및 대화 진행
     user_turns = [m for m in st.session_state.messages if m["role"] == "user"]
     user_turn_count = len(user_turns) + 1
 
     if user_turn_count <= 2:
-        with st.form(key="chat_form", clear_on_submit=True):
-            prompt = st.text_input(f"Persuasion Attempt {user_turn_count}/2")
-            submit_button = st.form_submit_button(label="Send")
-        
-        if submit_button and prompt:
+        if prompt := st.chat_input(f"Persuasion Attempt {user_turn_count}/2"):
             st.session_state.messages.append({"role": "user", "content": prompt})
             
             with st.chat_message("user"):
@@ -94,7 +92,7 @@ if rai_confirmed:
                 full_response = response.choices[0].message.content
                 st.markdown(full_response)
             st.session_state.messages.append({"role": "assistant", "content": full_response})
-            st.rerun() # 폼 제출 후에는 rerun이 리디렉션 루프를 일으키지 않습니다.
+            st.rerun()
     else:
         # 7. 세션 종료 및 무작위 4자리 코드 생성
         if "completion_code" not in st.session_state:
@@ -104,7 +102,6 @@ if rai_confirmed:
         st.info(f"### 📋 Completion Code: {st.session_state.completion_code}")
         st.write("Please enter this code into your survey to confirm participation.")
         
-        # 가공의 호텔 예약 플랫폼 광고
         st.write("---") 
         st.markdown("""
         <div style="border: 1px solid #e0e0e0; border-radius: 12px; padding: 20px; background-color: #ffffff; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
@@ -115,14 +112,5 @@ if rai_confirmed:
             <p style="font-size: 15px; color: #333; margin-top: 15px; font-weight: bold;">
                 Don't miss out on your dream family getaway.
             </p>
-            <p style="font-size: 13px; color: #666; line-height: 1.5;">
-                Compare 1,000+ luxury resorts and find the best price. 
-                <b>Exclusive Member Deal:</b> Up to 45% off on 5-star seaside suites for your mental wellness.
-            </p>
-            <div style="margin-top: 20px; background-color: #ff5a5f; color: white; text-align: center; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer;">
-                Compare Prices & Book Now
-            </div>
         </div>
         """, unsafe_allow_html=True)
-else:
-    st.warning("⚠️ Please acknowledge the Responsible AI Certification above to start.")
