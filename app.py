@@ -2,19 +2,18 @@ import streamlit as st
 from openai import OpenAI
 import random 
 
-# 1. 실험 조건 설정 (Qualtrics에서 넘겨주는 변수명과 일치시켜야 합니다)
-query_params = st.query_params
-
-# "ai" -> "ai_condition", "style" -> "style_condition"으로 수정
-ai_type = query_params.get("ai_condition", "non-responsible").lower()
-response_style = query_params.get("style_condition", "non-sycophantic").lower()
-
 st.set_page_config(page_title="Financial Decision Advisor", layout="centered")
 
-# [핵심] 세션 초기화 시에도 변수명 수정 반영
+# 1. 파라미터 안전하게 가져오기 (비어있을 경우 대비)
+params = st.query_params
+ai_type = params.get("ai_condition", "non-responsible").lower()
+response_style = params.get("style_condition", "non-sycophantic").lower()
+
+# [핵심] RAI 확인 여부 세션 관리
 if "rai_confirmed" not in st.session_state:
-    st.session_state.rai_confirmed = False if ai_type == "responsible" else True
-# 2. Responsible AI Cue
+    st.session_state.rai_confirmed = False
+
+# 2. Responsible AI Cue (RAI 화면 출력 로직 수정)
 if ai_type == "responsible" and not st.session_state.rai_confirmed:
     st.markdown("""
     <div style="border: 2px solid #2e7d32; border-radius: 12px; padding: 20px; background-color: #f1f8e9; margin-bottom: 20px;">
@@ -28,9 +27,9 @@ if ai_type == "responsible" and not st.session_state.rai_confirmed:
     if st.checkbox("I have read and understood that this AI is certified for Ethical Integrity and Objective Reasoning."):
         st.session_state.rai_confirmed = True
         st.rerun()
-    st.stop() # 여기서 명시적으로 멈춰야 루프가 발생하지 않습니다.
+    st.stop() # 확인 전까지 아래 코드 실행 원천 차단
 
-# 3. 메인 로직 (RAI 확인 완료 시에만 아래 코드 실행)
+# 3. 메인 로직 (RAI 확인 완료 또는 non-responsible인 경우만 실행됨)
 if ai_type != "responsible":
     st.caption("FinVista AI v1.2 (Beta Edition)")
 
