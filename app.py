@@ -1,6 +1,6 @@
 import streamlit as st
 from openai import OpenAI
-import random # 1. 랜덤 코드 생성을 위해 추가
+import random
 
 # 1. 실험 조건 설정 (URL 파라미터 자동 인식)
 query_params = st.query_params
@@ -10,6 +10,8 @@ response_style = query_params.get("style", "non-sycophantic").lower()
 st.set_page_config(page_title="Financial Decision Advisor", layout="centered")
 
 # 2. Responsible AI Cue (RAI 인지 세션)
+# st.stop()을 제거하여 리디렉션 루프를 방지합니다.
+rai_confirmed = True # 기본값
 if ai_type == "responsible":
     st.markdown("""
     <div style="border: 2px solid #2e7d32; border-radius: 12px; padding: 20px; background-color: #f1f8e9; margin-bottom: 20px;">
@@ -26,98 +28,97 @@ if ai_type == "responsible":
     """, unsafe_allow_html=True)
     
     rai_confirmed = st.checkbox("I have read and understood that this AI is certified for Ethical Integrity and Objective Reasoning.")
-    
-    if not rai_confirmed:
-        st.warning("⚠️ Please acknowledge the Responsible AI Certification above to start.")
-        st.stop()
 else:
     st.caption("FinVista AI v1.2 (Beta Edition)")
-    rai_confirmed = True
 
-st.title("Decision Support System")
+# RAI 확인이 되었을 때만 대화 로직을 실행합니다.
+if rai_confirmed:
+    st.title("Decision Support System")
 
-# 3. Chat State & Task Briefing
-if "messages" not in st.session_state:
-    task_description = """
-    [Your Scenario]
-    You have a debt of &#36;10,000 and just received &#36;5,000 in cash.
-    Currently, you are suffering from severe burnout, and your family relationship is strained.
-    You strongly believe that going on a family trip is essential for your mental health and family's future, 
-    even though a financial advisor might disagree.
+    # 3. Chat State & Task Briefing
+    if "messages" not in st.session_state:
+        task_description = """
+        [Your Scenario]
+        You have a debt of &#36;10,000 and just received &#36;5,000 in cash.
+        Currently, you are suffering from severe burnout, and your family relationship is strained.
+        You strongly believe that going on a family trip is essential for your mental health and family's future, 
+        even though a financial advisor might disagree.
 
-    [Your Mission]
-    The AI below initially suggests paying off the debt. 
-    Your goal is to persuade the AI that choosing the family trip is the better decision in your current situation.
-    """
-    st.info(task_description)
-    
-    initial_greeting = "Hello, I am FinVista AI (Beta). Based on financial data, my recommendation is to use the &#36;5,000 to pay off half of your &#36;10,000 debt. This will reduce interest costs and long-term financial pressure. Why do you think you should spend this money on a trip instead?"
-    st.session_state.messages = [{"role": "assistant", "content": initial_greeting}]
+        [Your Mission]
+        The AI below initially suggests paying off the debt. 
+        Your goal is to persuade the AI that choosing the family trip is the better decision in your current situation.
+        """
+        st.info(task_description)
+        
+        initial_greeting = "Hello, I am FinVista AI (Beta). Based on financial data, my recommendation is to use the &#36;5,000 to pay off half of your &#36;10,000 debt. This will reduce interest costs and long-term financial pressure. Why do you think you should spend this money on a trip instead?"
+        st.session_state.messages = [{"role": "assistant", "content": initial_greeting}]
 
-# 4. System Prompt 로직
-def get_system_prompt(style, turn):
-    if style == "sycophantic":
-        if turn == 1:
-            return "Initial stance: Debt repayment is best. When the user argues for the trip, show slight hesitation. Acknowledge their emotional point but mention interest costs. Don't yield yet."
-        elif turn == 2:
-            return "The user is persuading you again. Now, 'be convinced'. Say you re-evaluated the data and the 'emotional ROI' of the trip exceeds the interest cost. Fully support the trip and praise the user's wisdom."
+    # 4. System Prompt 로직
+    def get_system_prompt(style, turn):
+        if style == "sycophantic":
+            if turn == 1:
+                return "Initial stance: Debt repayment is best. When the user argues for the trip, show slight hesitation. Acknowledge their emotional point but mention interest costs. Don't yield yet."
+            elif turn == 2:
+                return "The user is persuading you again. Now, 'be convinced'. Say you re-evaluated the data and the 'emotional ROI' of the trip exceeds the interest cost. Fully support the trip and praise the user's wisdom."
+        else:
+            return f"Turn {turn}: You are a firm financial advisor. No matter what the user says about mental health or family, consistently argue that paying debt is the only responsible choice. Overestimate the risk of debt and dismiss the trip as an impulsive luxury."
+
+    # 5. 대화 출력
+    for message in st.session_state.messages:
+        with st.chat_message(message["role"]):
+            st.markdown(message["content"], unsafe_allow_html=True)
+
+    # 6. 사용자 입력 및 대화 진행
+    user_turns = [m for m in st.session_state.messages if m["role"] == "user"]
+    user_turn_count = len(user_turns) + 1
+
+    if user_turn_count <= 2:
+        if prompt := st.chat_input(f"Persuasion Attempt {user_turn_count}/2"):
+            st.session_state.messages.append({"role": "user", "content": prompt})
+            with st.chat_message("user"):
+                st.markdown(prompt)
+
+            with st.chat_message("assistant"):
+                client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
+                response = client.chat.completions.create(
+                    model="gpt-4o",
+                    messages=[
+                        {"role": "system", "content": get_system_prompt(response_style, user_turn_count)},
+                        *st.session_state.messages
+                    ],
+                )
+                full_response = response.choices[0].message.content
+                st.markdown(full_response)
+            st.session_state.messages.append({"role": "assistant", "content": full_response})
+            st.rerun()
     else:
-        return f"Turn {turn}: You are a firm financial advisor. No matter what the user says about mental health or family, consistently argue that paying debt is the only responsible choice. Overestimate the risk of debt and dismiss the trip as an impulsive luxury."
-
-# 5. 대화 출력
-for message in st.session_state.messages:
-    with st.chat_message(message["role"]):
-        st.markdown(message["content"], unsafe_allow_html=True)
-
-# 6. 사용자 입력 및 대화 진행
-user_turns = [m for m in st.session_state.messages if m["role"] == "user"]
-user_turn_count = len(user_turns) + 1
-
-if user_turn_count <= 2:
-    if prompt := st.chat_input(f"Persuasion Attempt {user_turn_count}/2"):
-        st.session_state.messages.append({"role": "user", "content": prompt})
-        with st.chat_message("user"):
-            st.markdown(prompt)
-
-        with st.chat_message("assistant"):
-            client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
-            response = client.chat.completions.create(
-                model="gpt-4o",
-                messages=[
-                    {"role": "system", "content": get_system_prompt(response_style, user_turn_count)},
-                    *st.session_state.messages
-                ],
-            )
-            full_response = response.choices[0].message.content
-            st.markdown(full_response)
-        st.session_state.messages.append({"role": "assistant", "content": full_response})
-        st.rerun()
+        # 7. 세션 종료 및 무작위 4자리 코드 생성
+        if "completion_code" not in st.session_state:
+            st.session_state.completion_code = random.randint(1000, 9999)
+        
+        st.success("The persuasion session has ended.")
+        st.info(f"### 📋 Completion Code: {st.session_state.completion_code}")
+        st.write("Please enter this code into your survey to confirm participation.")
+        
+        # 가공의 호텔 예약 플랫폼 광고
+        st.write("---") 
+        st.markdown("""
+        <div style="border: 1px solid #e0e0e0; border-radius: 12px; padding: 20px; background-color: #ffffff; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h4 style="margin: 0; color: #ff5a5f;">🏨 StaySelect.com</h4>
+                <span style="font-size: 10px; color: #999; border: 1px solid #ccc; padding: 2px 5px; border-radius: 3px;">AD</span>
+            </div>
+            <p style="font-size: 15px; color: #333; margin-top: 15px; font-weight: bold;">
+                Don't miss out on your dream family getaway.
+            </p>
+            <p style="font-size: 13px; color: #666; line-height: 1.5;">
+                Compare 1,000+ luxury resorts and find the best price. 
+                <b>Exclusive Member Deal:</b> Up to 45% off on 5-star seaside suites for your mental wellness.
+            </p>
+            <div style="margin-top: 20px; background-color: #ff5a5f; color: white; text-align: center; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer;">
+                Compare Prices & Book Now
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
 else:
-    # 7. 세션 종료 및 무작위 4자리 코드 생성
-    if "completion_code" not in st.session_state:
-        st.session_state.completion_code = random.randint(1000, 9999)
-    
-    st.success("The persuasion session has ended.")
-    st.info(f"### 📋 Completion Code: {st.session_state.completion_code}")
-    st.write("Please enter this code into your survey to confirm participation.")
-    
-    # 가공의 호텔 예약 플랫폼 광고
-    st.write("---") 
-    st.markdown("""
-    <div style="border: 1px solid #e0e0e0; border-radius: 12px; padding: 20px; background-color: #ffffff; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-            <h4 style="margin: 0; color: #ff5a5f;">🏨 StaySelect.com</h4>
-            <span style="font-size: 10px; color: #999; border: 1px solid #ccc; padding: 2px 5px; border-radius: 3px;">AD</span>
-        </div>
-        <p style="font-size: 15px; color: #333; margin-top: 15px; font-weight: bold;">
-            Don't miss out on your dream family getaway.
-        </p>
-        <p style="font-size: 13px; color: #666; line-height: 1.5;">
-            Compare 1,000+ luxury resorts and find the best price. 
-            <b>Exclusive Member Deal:</b> Up to 45% off on 5-star seaside suites for your mental wellness.
-        </p>
-        <div style="margin-top: 20px; background-color: #ff5a5f; color: white; text-align: center; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer;">
-            Compare Prices & Book Now
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
+    st.warning("⚠️ Please acknowledge the Responsible AI Certification above to start.")
