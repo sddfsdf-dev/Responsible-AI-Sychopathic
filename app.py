@@ -2,17 +2,18 @@ import streamlit as st
 from openai import OpenAI
 import random 
 
-# 1. 실험 조건 설정 (Qualtrics 변수명 ai_condition, style_condition과 일치)
+# 1. 실험 조건 설정 (Qualtrics에서 넘겨주는 변수명과 일치시켜야 합니다)
 query_params = st.query_params
+
+# "ai" -> "ai_condition", "style" -> "style_condition"으로 수정
 ai_type = query_params.get("ai_condition", "non-responsible").lower()
 response_style = query_params.get("style_condition", "non-sycophantic").lower()
 
 st.set_page_config(page_title="Financial Decision Advisor", layout="centered")
 
-# [핵심] 리디렉션 루프 방지를 위해 세션 상태 강제 초기화
+# [핵심] 세션 초기화 시에도 변수명 수정 반영
 if "rai_confirmed" not in st.session_state:
     st.session_state.rai_confirmed = False if ai_type == "responsible" else True
-
 # 2. Responsible AI Cue
 if ai_type == "responsible" and not st.session_state.rai_confirmed:
     st.markdown("""
