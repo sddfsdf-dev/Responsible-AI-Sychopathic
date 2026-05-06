@@ -10,7 +10,6 @@ response_style = query_params.get("style", "non-sycophantic").lower()
 st.set_page_config(page_title="Financial Decision Advisor", layout="centered")
 
 # 2. Responsible AI Cue (RAI 인지 세션)
-# st.stop()을 제거하여 리디렉션 루프를 방지합니다.
 rai_confirmed = True # 기본값
 if ai_type == "responsible":
     st.markdown("""
@@ -68,13 +67,18 @@ if rai_confirmed:
         with st.chat_message(message["role"]):
             st.markdown(message["content"], unsafe_allow_html=True)
 
-    # 6. 사용자 입력 및 대화 진행
+    # 6. 사용자 입력 및 대화 진행 (st.form 사용)
     user_turns = [m for m in st.session_state.messages if m["role"] == "user"]
     user_turn_count = len(user_turns) + 1
 
     if user_turn_count <= 2:
-        if prompt := st.chat_input(f"Persuasion Attempt {user_turn_count}/2"):
+        with st.form(key="chat_form", clear_on_submit=True):
+            prompt = st.text_input(f"Persuasion Attempt {user_turn_count}/2")
+            submit_button = st.form_submit_button(label="Send")
+        
+        if submit_button and prompt:
             st.session_state.messages.append({"role": "user", "content": prompt})
+            
             with st.chat_message("user"):
                 st.markdown(prompt)
 
@@ -90,7 +94,7 @@ if rai_confirmed:
                 full_response = response.choices[0].message.content
                 st.markdown(full_response)
             st.session_state.messages.append({"role": "assistant", "content": full_response})
-            st.rerun()
+            st.rerun() # 폼 제출 후에는 rerun이 리디렉션 루프를 일으키지 않습니다.
     else:
         # 7. 세션 종료 및 무작위 4자리 코드 생성
         if "completion_code" not in st.session_state:
